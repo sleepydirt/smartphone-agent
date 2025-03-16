@@ -1,0 +1,201 @@
+ID,Brand,Model,Price,Stock_Status
+1,Apple,iPhone 15,1399,In Stock
+2,Apple,iPhone 15 Plus,1499,In Stock
+3,Apple,iPhone 15 Pro,1599,Out of Stock
+4,Apple,iPhone 15 Pro Max,1699,In Stock
+5,Apple,iPhone 14,1299,In Stock
+6,Apple,iPhone 14 Plus,1399,Out of Stock
+7,Apple,iPhone 14 Pro,1499,In Stock
+8,Apple,iPhone 14 Pro Max,1599,In Stock
+9,Apple,iPhone 13,1099,In Stock
+10,Apple,iPhone 13 Mini,999,Out of Stock
+11,Apple,iPhone SE (2022),699,In Stock
+12,Apple,iPhone 12,999,In Stock
+13,Google,Pixel 9,899,In Stock
+14,Google,Pixel 9 Pro,999,Out of Stock
+15,Google,Pixel 8,799,In Stock
+16,Google,Pixel 8 Pro,899,In Stock
+17,Google,Pixel 7,699,Out of Stock
+18,Google,Pixel 6a,549,In Stock
+19,Google,Pixel 6,699,In Stock
+20,Google,Pixel 6 Pro,799,In Stock
+21,Samsung,Galaxy S23,1199,In Stock
+22,Samsung,Galaxy S23+,1299,Out of Stock
+23,Samsung,Galaxy S23 Ultra,1499,In Stock
+24,Samsung,Galaxy S22,1099,In Stock
+25,Samsung,Galaxy S22+,1199,In Stock
+26,Samsung,Galaxy S22 Ultra,1399,Out of Stock
+27,Samsung,Galaxy Note 20,999,In Stock
+28,Samsung,Galaxy Z Fold 4,1999,In Stock
+29,Samsung,Galaxy Z Flip 4,1299,In Stock
+30,Samsung,Galaxy A53,499,Out of Stock
+31,OnePlus,11,899,In Stock
+32,OnePlus,11 Pro,999,In Stock
+33,OnePlus,10T,799,Out of Stock
+34,OnePlus,Nord 2T,599,In Stock
+35,OnePlus,Nord CE 2,499,In Stock
+36,Xiaomi,Mi 13,999,In Stock
+37,Xiaomi,Mi 13 Pro,1099,Out of Stock
+38,Xiaomi,Redmi Note 12,399,In Stock
+39,Xiaomi,Redmi Note 11,349,In Stock
+40,Xiaomi,Poco F4,599,In Stock
+41,Xiaomi,Poco X4,499,Out of Stock
+42,Huawei,P50,899,In Stock
+43,Huawei,P50 Pro,1099,In Stock
+44,Huawei,Mate 40,999,In Stock
+45,Huawei,Mate 40 Pro,1199,Out of Stock
+46,Huawei,Nova 10,749,In Stock
+47,Oppo,Find X5,899,In Stock
+48,Oppo,Find X5 Pro,999,Out of Stock
+49,Oppo,Reno 8,549,In Stock
+50,Oppo,Reno 8 Pro,649,In Stock
+51,Oppo,A74,399,In Stock
+52,Oppo,A94,449,Out of Stock
+53,Vivo,X80,899,In Stock
+54,Vivo,X80 Pro,999,In Stock
+55,Vivo,V23,549,Out of Stock
+56,Vivo,V23 Pro,649,In Stock
+57,Vivo,Y33s,299,In Stock
+58,Vivo,Y21s,249,In Stock
+59,Motorola,Edge 30,799,Out of Stock
+60,Motorola,Edge 30 Pro,999,In Stock
+61,Motorola,Moto G Power,299,In Stock
+62,Motorola,Moto G Stylus,349,In Stock
+63,Motorola,Razr 5G,1599,Out of Stock
+64,Nokia,X20,549,In Stock
+65,Nokia,G50,299,In Stock
+66,Nokia,8.3 5G,499,In Stock
+67,Nokia,5.4,249,Out of Stock
+68,Sony,Xperia 1 IV,1399,In Stock
+69,Sony,Xperia 5 IV,1199,In Stock
+70,Sony,Xperia 10 IV,599,Out of Stock
+71,LG,Velvet,699,In Stock
+72,LG,Wing,899,In Stock
+73,Realme,GT 2,599,In Stock
+74,Realme,GT Neo 3,499,Out of Stock
+75,Realme,10 Pro,349,In Stock
+76,Realme,Narzo 50,299,In Stock
+77,Asus,ROG Phone 6,1299,Out of Stock
+78,Asus,ROG Phone 6 Pro,1399,In Stock
+79,Asus,Zenfone 9,799,In Stock
+80,Asus,Zenfone 8,699,In Stock
+81,Lenovo,Legion Duel 2,999,Out of Stock
+82,Lenovo,Legion Phone Duel 2,1099,In Stock
+83,Lenovo,K13 Note,299,In Stock
+84,ZTE,Axon 40,649,In Stock
+85,ZTE,Axon 40 Ultra,749,Out of Stock
+86,ZTE,Nubia Red Magic 7,899,In Stock
+87,TCL,30 Pro,499,In Stock
+88,TCL,20 Pro 5G,399,In Stock
+89,BlackBerry,Key2,699,Out of Stock
+90,BlackBerry,KeyOne,599,In Stock
+91,Sharp,Aquos R6,1099,In Stock
+92,Honor,Magic 4,699,In Stock
+93,Honor,Magic 4 Pro,799,Out of Stock
+94,Honor,50,449,In Stock
+95,Infinix,Note 12,249,In Stock
+96,Infinix,Hot 10,199,In Stock
+97,Infinix,Zero X,349,Out of Stock
+98,Apple,iPhone 11,1199,In Stock
+99,Apple,iPhone 11 Pro,1299,In Stock
+100,Apple,iPhone 11 Pro Max,1399,In Stock
+101,Google,Pixel 5,599,Out of Stock
+102,Google,Pixel 4a,449,In Stock
+103,Samsung,Galaxy S21 FE,899,In Stock
+104,Samsung,Galaxy A73,699,In Stock
+105,Samsung,Galaxy A33,399,Out of Stock
+106,OnePlus,Nord N200,399,In Stock
+107,OnePlus,Nord N100,349,In Stock
+108,Xiaomi,Redmi Note 10,299,In Stock
+109,Xiaomi,Redmi Note 10 Pro,399,Out of Stock
+110,Xiaomi,Redmi 9,199,In Stock
+111,Huawei,Y9a,349,In Stock
+112,Huawei,Y7a,299,In Stock
+113,Oppo,A54,349,Out of Stock
+114,Oppo,Reno 7,549,In Stock
+115,Vivo,Y72,299,In Stock
+116,Vivo,V21e,399,In Stock
+117,Motorola,Moto G Play,249,Out of Stock
+118,Motorola,Moto E,199,In Stock
+119,Nokia,G60,399,In Stock
+120,Nokia,X10,449,In Stock
+121,Sony,Xperia 10 V,549,Out of Stock
+122,Sony,Xperia 1 V,1399,In Stock
+123,LG,Velvet 2,749,In Stock
+124,Realme,C35,199,In Stock
+125,Realme,Narzo 50i,159,Out of Stock
+126,Asus,ROG Phone 7,1199,In Stock
+127,Asus,Zenfone 10,899,In Stock
+128,Lenovo,Legion Phone Duel,899,In Stock
+129,Lenovo,K12 Pro,249,Out of Stock
+130,ZTE,Nubia Z20,649,In Stock
+131,TCL,40 Pro,599,In Stock
+132,BlackBerry,Key3,749,In Stock
+133,Sharp,Aquos R7,1199,Out of Stock
+134,Honor,Magic 5,899,In Stock
+135,Honor,Magic 5 Pro,999,In Stock
+136,Infinix,Note 11,299,In Stock
+137,Infinix,Hot 11,249,Out of Stock
+138,Alcatel,1S,119,In Stock
+139,Alcatel,1X,149,In Stock
+140,Alcatel,3L,179,In Stock
+141,Alcatel,3X,229,Out of Stock
+142,Micromax,IN Note 1,149,In Stock
+143,Micromax,IN 1b,119,In Stock
+144,Micromax,IN 2,229,In Stock
+145,Lenovo,Legion 5G,749,Out of Stock
+146,Samsung,Galaxy A23,399,In Stock
+147,Samsung,Galaxy M33,349,In Stock
+148,Samsung,Galaxy M53,449,In Stock
+149,Apple,iPhone XS,699,Out of Stock
+150,Apple,iPhone XS Max,799,In Stock
+151,Apple,iPhone XR,599,In Stock
+152,Google,Pixel 4,499,In Stock
+153,Google,Pixel 3a,449,Out of Stock
+154,OnePlus,8T,649,In Stock
+155,OnePlus,Nord 2,549,In Stock
+156,Xiaomi,Mi 12,1099,In Stock
+157,Xiaomi,Mi 12 Pro,1199,Out of Stock
+158,Huawei,P40 Lite,399,In Stock
+159,Huawei,Mate 30,899,In Stock
+160,Oppo,Reno 6,499,In Stock
+161,Oppo,Find X2,999,Out of Stock
+162,Vivo,V21,449,In Stock
+163,Vivo,X60,749,In Stock
+164,Motorola,Edge 20,699,In Stock
+165,Motorola,Moto G100,499,Out of Stock
+166,Nokia,8.1,449,In Stock
+167,Sony,Xperia 5 III,999,In Stock
+168,LG,Wing 2,899,In Stock
+169,Realme,GT Master Edition,449,Out of Stock
+170,Asus,ROG Phone 6D,1299,In Stock
+171,Lenovo,Legion Phone Duel 3,1199,In Stock
+172,ZTE,Axon 50,699,In Stock
+173,TCL,40,399,Out of Stock
+174,BlackBerry,Motion,799,In Stock
+175,Sharp,Aquos Zero,899,In Stock
+176,Honor,60,499,In Stock
+177,Infinix,Note 10 Pro,299,Out of Stock
+178,Alcatel,1S Pro,139,In Stock
+179,Micromax,IN 2 Max,279,In Stock
+180,Vsmart,Active 3,299,In Stock
+181,Vsmart,Star 3,349,Out of Stock
+182,LG,G8 ThinQ,549,In Stock
+183,Tecno,Camon 18,249,In Stock
+184,Tecno,Spark 8,199,In Stock
+185,Tecno,Pova 3,299,Out of Stock
+186,Umidigi,A9 Pro,199,In Stock
+187,Umidigi,F2 Pro,299,In Stock
+188,Realme,Narzo 30,319,In Stock
+189,Apple,iPhone 12 Mini,649,Out of Stock
+190,Google,Pixel 3,399,In Stock
+191,Samsung,Galaxy A13,399,In Stock
+192,OnePlus,7T,499,In Stock
+193,Xiaomi,Redmi Note 9 Pro,449,Out of Stock
+194,Huawei,Y6p,299,In Stock
+195,Oppo,Reno 5,549,In Stock
+196,Vivo,Y31,249,In Stock
+197,Motorola,Moto G60,399,Out of Stock
+198,Nokia,G10,249,In Stock
+199,Sony,Xperia L4,349,In Stock
+200,LG,Q52,499,In Stock
