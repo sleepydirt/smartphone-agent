@@ -1,0 +1,14 @@
+"""CREATE DATABASE smartphones_db;"""
+
+"""CREATE TABLE IF NOT EXISTS smartphones (
+            id SERIAL PRIMARY KEY,
+            brand TEXT,
+            model TEXT,
+            price INTEGER,
+            stock_status TEXT
+        );
+"""
+
+"""docker cp ./smartphone_inventory_sgd.csv <container_name>:/tmp"""
+
+"""COPY smartphones(id,brand,model,price,stock_status) FROM '/tmp/smartphone_inventory_sgd.csv' DELIMITER ',' CSV HEADER;"""
