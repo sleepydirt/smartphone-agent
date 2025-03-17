@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from fastapi.responses import StreamingResponse
 import uvicorn
 import uuid
 from langchain_core.tools import tool
@@ -15,12 +16,13 @@ from typing_extensions import TypedDict
 import psycopg2
 import os
 import json
+import re
 
 load_dotenv()
 app = FastAPI()
 
 
-OLLAMA_MODEL = "llama3.1:8b"
+OLLAMA_MODEL = "llama3.1:70b"
 POSTGRES_PASSWORD = os.getenv("POSTGRES_PASSWORD")
 POSTGRES_USER = os.getenv("POSTGRES_USER")
 POSTGRES_DATABASE = os.getenv("POSTGRES_DATABASE")
@@ -28,6 +30,7 @@ POSTGRES_DATABASE = os.getenv("POSTGRES_DATABASE")
 OLLAMA_BASE_URL = "100.110.219.100:11434"
 
 llm_json = ChatOllama(model=OLLAMA_MODEL, temperature=0, format="json", base_url=OLLAMA_BASE_URL)
+llm_temp = ChatOllama(model=OLLAMA_MODEL, temperature=0, format="json", base_url=OLLAMA_BASE_URL)
 llm = ChatOllama(model=OLLAMA_MODEL, temperature=0, base_url=OLLAMA_BASE_URL)
 
 ROUTER_INSTRUCTIONS = '''You are an expert at determining whether a user question requires access to a database from a smartphone shop. 
@@ -80,6 +83,7 @@ Answer:'''
 class State(TypedDict):
     messages: Annotated[Sequence[BaseMessage], add_messages]
     tool_call_result: List
+    final_msg: Annotated[Sequence[BaseMessage], add_messages]
 
 # Tools
 @tool
@@ -216,7 +220,7 @@ def generate_response(state):
 
     generate_response = llm.invoke([HumanMessage(content=rag_prompt_formatted)])
 
-    return {"messages": [generate_response]}
+    return {"final_msg": [generate_response]}
 
 
 workflow = StateGraph(State)
@@ -254,29 +258,25 @@ async def root():
 async def inference(inputs: str):
     prompt = {
     "messages": [HumanMessage(content=inputs)],
-    "tool_call_result": []
+    "tool_call_result": [],
+    "final_msg": []
     }
     config = {"configurable": {"thread_id": str(uuid.uuid4())}}
 
-    # buffer = []
-    # async for output, _ in graph.astream(prompt, config, stream_mode="messages"):
-    #     if output.content:
-    #         buffer.append(output.content)
-    #         print(output.content, end='|', flush=True)
-            
-    # return buffer
-    buffer = []
-    tool_msg_received = False
-    async for output, _ in graph.astream(prompt, config, stream_mode="messages"):
-        if not tool_msg_received:
-            buffer.append(output)
-            if isinstance(output, ToolMessage):
-                tool_msg_received = True
-                buffer.clear()
-        else:
-            # After the ToolMessage, print tokens directly.
-            print(output.content, end='', flush=True)
-            buffer.append(output.content)
-    return buffer
+    async def stream_outputs():
+
+        async for output, _ in graph.astream(prompt, config, stream_mode="messages"):
+            token = output.content
+            # if not tool_msg_received:
+            #     if isinstance(output, ToolMessage):
+            #         tool_msg_received = True
+            #     continue
+            yield token
+    return StreamingResponse(stream_outputs(), media_type="text/plain")
+        #     else:
+        #         # After the ToolMessage, print tokens directly.
+        #         print(output.content, end='', flush=True)
+        #         buffer.append(output.content)
+        # return buffer
 if __name__ == '__main__':
     uvicorn.run(app=app, port=8000)
