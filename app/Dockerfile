@@ -10,6 +10,8 @@ RUN apt-get update -y && \
 
 COPY . .
 COPY ./smartphone_inventory_sgd.csv /tmp/smartphone_inventory_sgd.csv
+COPY server.py .
+COPY app.py .
 
 # gradio port
 EXPOSE 7860

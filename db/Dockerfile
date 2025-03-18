@@ -4,10 +4,13 @@ ENV POSTGRES_USER=admin
 ENV POSTGRES_PASSWORD=password
 ENV POSTGRES_DB=smartphones_db
 
+# Copy initialization files
 COPY init.sql /docker-entrypoint-initdb.d/
-COPY smartphone_inventory_sgd.csv /tmp/smartphone_inventory_sgd.csv
+COPY smartphone_inventory_sgd.csv /tmp/
+COPY entrypoint.sh /docker-entrypoint-initdb.d/
 
-COPY entrypoint.sh /docker-entrypoint-initdb.d/entrypoint.sh
-RUN chmod +x /docker-entrypoint-initdb.d/entrypoint.sh
+# Fix line endings and make executable
+RUN sed -i 's/\r$//' /docker-entrypoint-initdb.d/entrypoint.sh \
+    && chmod +x /docker-entrypoint-initdb.d/entrypoint.sh
 
 EXPOSE 5432

@@ -1,8 +1,8 @@
-version: '3.8'
+version: "3.8"
 
 services:
   db:
-    build: 
+    build:
       context: ./db
       dockerfile: Dockerfile
     ports:
@@ -11,8 +11,25 @@ services:
       - POSTGRES_USER=admin
       - POSTGRES_PASSWORD=password
       - POSTGRES_DB=smartphones_db
+      - POSTGRES_HOST=db
     volumes:
       - postgres_data:/var/lib/postgresql/data
+
+  ollama:
+    image: ollama/ollama:latest
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    restart: unless-stopped
+    runtime: nvidia
+    entrypoint: ["/bin/sh", "-c"]
+    command: >
+      "ollama serve &
+      sleep 5 && 
+      ollama pull llama3.1:8b && 
+      ollama pull nomic-embed-text:v1.5 &&
+      tail -f /dev/null"
 
   backend:
     build:
@@ -21,9 +38,14 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - DATABASE_URL=postgresql://admin:password@db:5432/smartphones_db
+      - POSTGRES_USER=admin
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=smartphones_db
+      - POSTGRES_HOST=db
+      - OLLAMA_HOST=http://ollama:11434
     depends_on:
       - db
+      - ollama
     command: ["python", "server.py"]
 
   frontend:
@@ -40,3 +62,4 @@ services:
 
 volumes:
   postgres_data:
+  ollama_data:
