@@ -27,8 +27,6 @@ app = FastAPI()
 loader = CSVLoader(
     file_path=os.path.join(
         os.path.dirname(__file__),
-        "..",
-        "docker",
         "smartphone_inventory_sgd.csv"
     )
 )
@@ -119,9 +117,9 @@ Here is what a grader has to say about the data to help you with your response:
 
 {feedback}
 
-Please structure your response in a tabular format if there is context provided:
+Please structure your response this format if there is context provided:
 
-<Brand> <Model> <Price> <Stock Status>
+<Brand> <Model>\n <Price>\n (<Stock Status>)
 '''
 
 class State(TypedDict):
@@ -368,16 +366,8 @@ async def inference(inputs: str):
 
         async for output, metadata in graph.astream(prompt, config, stream_mode="messages"):
             if metadata['langgraph_node'] == 'generate_response':
-            # if not tool_msg_received:
-            #     if isinstance(output, ToolMessage):
-            #         tool_msg_received = True
-            #     continue
                 yield output.content
-    return StreamingResponse(stream_outputs(), media_type="text/event-stream")
-        #     else:
-        #         # After the ToolMessage, print tokens directly.
-        #         print(output.content, end='', flush=True)
-        #         buffer.append(output.content)
-        # return buffer
+    return StreamingResponse(stream_outputs(), media_type="text/markdown")
+
 if __name__ == '__main__':
     uvicorn.run(app=app, port=8000)
