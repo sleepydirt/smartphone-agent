@@ -118,7 +118,7 @@ Here is what a grader has to say about the data to help you with your response:
 
 Please structure your response this format if there is context provided:
 
-<Brand> <Model>\n <Price>\n (<Stock Status>)
+<Brand> <Model>\n S$<Price>\n (<Stock Status>)\n\n
 '''
 
 class State(TypedDict):
