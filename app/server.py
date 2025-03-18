@@ -4,9 +4,12 @@ import uvicorn
 import uuid
 from langchain_core.tools import tool
 from langchain_ollama import ChatOllama
-from langchain_core.messages import SystemMessage, HumanMessage, ToolMessage
+from langchain_ollama import OllamaEmbeddings
+from langchain_core.messages import SystemMessage, HumanMessage
 from langchain_core.tools import tool
 from langchain_core.messages import BaseMessage
+from langchain_core.vectorstores import InMemoryVectorStore
+from langchain_community.document_loaders import CSVLoader
 from langgraph.graph.message import add_messages
 from langgraph.graph import END, StateGraph, START
 from langgraph.checkpoint.memory import MemorySaver
@@ -21,13 +24,28 @@ import re
 load_dotenv()
 app = FastAPI()
 
+loader = CSVLoader(
+    file_path=os.path.join(
+        os.path.dirname(__file__),
+        "..",
+        "docker",
+        "smartphone_inventory_sgd.csv"
+    )
+)
+docs = loader.load()
+embeddings = OllamaEmbeddings(model="nomic-embed-text:v1.5",)
+vectorstore = InMemoryVectorStore.from_documents(
+    docs,
+    embedding=embeddings,
+)
+retriever = vectorstore.as_retriever(k=3)
 
-OLLAMA_MODEL = "llama3.1:70b"
+OLLAMA_MODEL = "llama3.1:8b"
 POSTGRES_PASSWORD = os.getenv("POSTGRES_PASSWORD")
 POSTGRES_USER = os.getenv("POSTGRES_USER")
 POSTGRES_DATABASE = os.getenv("POSTGRES_DATABASE")
 
-OLLAMA_BASE_URL = "100.110.219.100:11434"
+OLLAMA_BASE_URL = "localhost:11434"
 
 llm_json = ChatOllama(model=OLLAMA_MODEL, temperature=0, format="json", base_url=OLLAMA_BASE_URL)
 llm_temp = ChatOllama(model=OLLAMA_MODEL, temperature=0, format="json", base_url=OLLAMA_BASE_URL)
@@ -60,16 +78,36 @@ The database schema is as follows:
 - stock_status (str): The stock status of the smartphone ('In Stock', 'Out of Stock')
 '''
 
-GRADER_INSTRUCTIONS = '''You are a grader that will be provided with data from a smartphone store's database and a user question. If the database contains information that can answer the user's question, grade it as 'yes'. Return JSON with a single key, grader_score, that is either 'yes' or 'no' to indicate whether the user's question can be answered with the data provided.'''
+GRADER_INSTRUCTIONS = '''You are an expert grader that will be provided with data from a smartphone store's database and a user question.
+If the database contains information that can answer the user's question, grade it as 'yes'. Please also justify your choice, explaining why 
+the database information contains information related to the user's question. 
 
-GRADER_PROMPT = '''Here is the data provided: \n\n {data} \n\n Here is the user question: \n\n {question}'''
+Return JSON with two keys; 
 
-RAG_PROMPT = '''You are an assistant that helps to answer users' queries about smartphone pricing and availibility.
-Here is the context to use to answer the question, a database query response that contains ONLY information about the requested smartphone(s) brand, model, price, and availibility. For all other specifications, please inform the user that you do not have the information. Offer suggestions if customers type incomplete or ambiguous queries (e.g., "Did you mean iPhone 14 Pro Max or iPhone 14 Pro?").
+grader_score: either 'yes' or 'no' to indicate whether the user's question can be answered with the data provided
 
-If the requested smartphone is not present in the context, please inform the user that the smartphone is not available at the moment. Do not make up information.
+justify: explain your rationale for grader_score.
 
-Here is the context:
+Example:
+
+question: Can I know the price of the iPhone 13 Pro?
+data: null
+retrieved_content: ['Brand: Apple\nModel: iPhone 13\nPrice: 1099\nStock_Status: In Stock']
+
+Response:
+{'grader_score': 'no',
+ 'justify': "The results suggest that the database does not contain any information about the price of the iPhone 13 Pro. These should be suggested as alternatives."}
+'''
+
+GRADER_PROMPT = '''Here is the data provided: \n\n {data} Here is some additional information (if available): \n\n {retrieved_content} \n\n Here is the user's question: \n\n {question}'''
+
+RAG_PROMPT = '''You are a friendly assistant that helps to answer users' queries about smartphones.
+
+You will only use the context to answer the user question. Always give the user suggestions based on the given context only.
+
+All prices are in Singapore Dollars (S$). Show all results, regardless if they are in stock or not.
+
+Here is the context from the database:
 
 {context} 
 
@@ -77,24 +115,52 @@ Here is the user's question:
 
 {question}
 
-Convey all information to the user.
-Answer:'''
+Here is what a grader has to say about the data to help you with your response:
+
+{feedback}
+
+Please structure your response in a tabular format if there is context provided:
+
+<Brand> <Model> <Price> <Stock Status>
+'''
 
 class State(TypedDict):
     messages: Annotated[Sequence[BaseMessage], add_messages]
     tool_call_result: List
-    final_msg: Annotated[Sequence[BaseMessage], add_messages]
+    grader_score: Literal['yes', 'no']
+    justify: str
+    retrieved_content: List
 
 # Tools
 @tool
-def executePostgreSQLQuery(query: str) -> List[Tuple[int, str, str, int, str]]:
+def retrieveFromVectorDB(query: str) -> List:
+    '''A tool that performs similarity search on a vector database to retrieve results similar to the given query.
+    
+    Args:
+        query (str): The user's question
+    
+    Returns:
+        result (List): A list of similar results from the vector database.'''
+
+    retrieved_docs = retriever.invoke(query)
+    
+    # Extracts the content from the document object
+    result = [retrieved_docs[i].page_content for i in range(0, len(retrieved_docs))]
+
+    # Remove the ID column from the results
+    result = [re.sub(r"^ID: \d+\n", "", entry) for entry in result]
+    
+    return result
+
+@tool
+def executePostgreSQLQuery(query: str) -> List:
     '''Executes a PostgreSQL query and returns the result as a list of tuples. Please only query the table "smartphones".
     
     Args:
         query (str): The PostgreSQL query to be executed.
         
     Returns:
-        result (List[Tuple[int, str, str, int, str]]): The result of the query, a list of tuples (id, brand, model, price, stock_status).
+        result (List): The result of the query, a list of tuples (id, brand, model, price, stock_status).
     '''
 
     # Connect to database
@@ -116,38 +182,23 @@ def executePostgreSQLQuery(query: str) -> List[Tuple[int, str, str, int, str]]:
         # print("Database query success")
         return result
     else:
-        return "No result from the database"
+        return
 
 # Edges
 
-def grader(state) -> Literal["yes", "no"]:
-    '''Determines whether the results from the database can answer the user's question. If not, suggest alternatives or inform the user that the information is not available.
+def route_to_vectordb(state) -> Literal["vector", "grade"]:
+    '''Determines whether to perform similarity search on a vector database.
     
     Args:
         state (State): The current state of the agent.
     
     Returns:
-        str: A decision by the model for whether the user's question can be answered with the data provided.'''
-    
+        str: Calls the grader node if there is no need to access the vector database. Otherwise, call the retrieval tool'''
 
-    # Take the last message in the state to get the user question
-    question = state["messages"][-1].content
-
-    tool_call_result = state["tool_call_result"]
-
-    # Format the system prompt sent to the llm with context from the database and user question
-    grader_prompt_formatted = GRADER_PROMPT.format(data=tool_call_result, question=question)
-
-    grader_response = llm_json.invoke([SystemMessage(content=GRADER_INSTRUCTIONS)] + [HumanMessage(content=grader_prompt_formatted)])
-    # print("Grading the results from the database...")
-    grader_score = json.loads(grader_response.content)
-    
-    if grader_score.get("grader_score") == "yes":
-        # print("The user's question can be answered with the data provided.")
-        return "yes"
+    if state['tool_call_result'].content == 'null':
+        return "vector"
     else:
-        # print("The user's question cannot be answered with the data provided.")
-        return "no"
+        return "grade"
 
 def router(state) -> Literal["accept", "reject"]:
     '''Determines whether the user query requires access to the database.
@@ -174,6 +225,35 @@ def router(state) -> Literal["accept", "reject"]:
         return "reject"
 
 # Nodes
+
+def grader(state):
+    '''Determines whether the results from the database can answer the user's question. If not, suggest alternatives or inform the user that the information is not available.
+    
+    Args:
+        state (State): The current state of the agent.
+    
+    Returns:
+        dict: The updated state with the grader score and justification.'''
+    
+    llm_json = ChatOllama(model=OLLAMA_MODEL, temperature=0, format="json", base_url=OLLAMA_BASE_URL)
+
+    # Take the first message in the state to get the user question
+    question = state["messages"][-1].content
+
+    # Get the tool call result from the state
+    tool_call_result = state["tool_call_result"]
+
+    retrieved_content = state["retrieved_content"]
+
+    # Format the system prompt sent to the llm with context from the database and user question
+    grader_prompt_formatted = GRADER_PROMPT.format(data=tool_call_result, question=question, retrieved_content=retrieved_content)
+
+    grader_response = llm_json.invoke([SystemMessage(content=GRADER_INSTRUCTIONS)] + [HumanMessage(content=grader_prompt_formatted)])
+    # print("Grading the results from the database...")
+    grader_score = json.loads(grader_response.content)
+    
+    return {"grader_score": grader_score.get("grader_score"), "justify": grader_score.get("justify")}
+
 def sql_agent(state):
     '''Generate a SQL query based on the user question and executes it.
     
@@ -199,6 +279,20 @@ def sql_agent(state):
 
     return {"tool_call_result": tool_call_result}
 
+def retrieve_agent(state):
+    '''Performs similarity search on a vector database to retrieve results similar to the given query.
+    
+    Args:
+        state (State): The current state of the agent.
+    
+    Returns:
+        dict: The updated state with the retrieval result appended.'''
+    question = state["messages"][-1]
+
+    retrieved_content = retrieveFromVectorDB(question.content)
+
+    return {"retrieved_content": retrieved_content}
+
 def generate_response(state):
     '''Generate response to user query based on the context and user question.
     
@@ -214,38 +308,43 @@ def generate_response(state):
 
     # Get the tool call result from the state
     tool_call_result = state["tool_call_result"]
+
+    retrieved_content = state["retrieved_content"]
+
+    justify = state["justify"]
     
     # Format the system prompt sent to the llm with context and user question
-    rag_prompt_formatted = RAG_PROMPT.format(context=tool_call_result, question=question)
+    rag_prompt_formatted = RAG_PROMPT.format(context=[tool_call_result] + retrieved_content, question=question, feedback=justify)
 
     generate_response = llm.invoke([HumanMessage(content=rag_prompt_formatted)])
 
-    return {"final_msg": [generate_response]}
-
+    return {"messages": [generate_response]}
 
 workflow = StateGraph(State)
 
 workflow.add_node("sql_agent", sql_agent)
+workflow.add_node("retrieve_agent", retrieve_agent)
 workflow.add_node("generate_response", generate_response)
-
+workflow.add_node("grader", grader)
 workflow.set_conditional_entry_point(
     router,
     {
         "accept": "sql_agent",
-        "reject": END
+        "reject": "retrieve_agent"
     }
 )
 
-# should add like a max number of retries, if no go back to sql_agent
 workflow.add_conditional_edges(
     "sql_agent",
-    grader,
+    route_to_vectordb,
     {
-        "yes": "generate_response",
-        "no": "generate_response"
+        "vector": "retrieve_agent",
+        "grade": "grader"
     }
 )
 
+workflow.add_edge("grader", "generate_response")
+workflow.add_edge("retrieve_agent", "grader")
 checkpointer = MemorySaver()
 
 graph = workflow.compile(checkpointer=checkpointer)
@@ -259,20 +358,22 @@ async def inference(inputs: str):
     prompt = {
     "messages": [HumanMessage(content=inputs)],
     "tool_call_result": [],
-    "final_msg": []
+    "grader_score": "",
+    "justify": "",
+    "retrieved_content": []
     }
     config = {"configurable": {"thread_id": str(uuid.uuid4())}}
 
     async def stream_outputs():
 
-        async for output, _ in graph.astream(prompt, config, stream_mode="messages"):
-            token = output.content
+        async for output, metadata in graph.astream(prompt, config, stream_mode="messages"):
+            if metadata['langgraph_node'] == 'generate_response':
             # if not tool_msg_received:
             #     if isinstance(output, ToolMessage):
             #         tool_msg_received = True
             #     continue
-            yield token
-    return StreamingResponse(stream_outputs(), media_type="text/plain")
+                yield output.content
+    return StreamingResponse(stream_outputs(), media_type="text/event-stream")
         #     else:
         #         # After the ToolMessage, print tokens directly.
         #         print(output.content, end='', flush=True)
