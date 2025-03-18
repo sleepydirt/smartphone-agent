@@ -39,14 +39,13 @@ vectorstore = InMemoryVectorStore.from_documents(
 retriever = vectorstore.as_retriever(k=3)
 
 OLLAMA_MODEL = "llama3.1:8b"
-POSTGRES_PASSWORD = os.getenv("POSTGRES_PASSWORD")
-POSTGRES_USER = os.getenv("POSTGRES_USER")
-POSTGRES_DATABASE = os.getenv("POSTGRES_DATABASE")
-
-OLLAMA_BASE_URL = "localhost:11434"
+POSTGRES_PASSWORD = os.getenv("POSTGRES_PASSWORD", "password")
+POSTGRES_USER = os.getenv("POSTGRES_USER", "admin")
+POSTGRES_DB = os.getenv("POSTGRES_DB", "smartphones_db")
+OLLAMA_BASE_URL = os.getenv("OLLAMA_HOST", "http://ollama:11434")
+POSTGRES_BASE_URL = os.getenv("POSTGRES_HOST", "db")
 
 llm_json = ChatOllama(model=OLLAMA_MODEL, temperature=0, format="json", base_url=OLLAMA_BASE_URL)
-llm_temp = ChatOllama(model=OLLAMA_MODEL, temperature=0, format="json", base_url=OLLAMA_BASE_URL)
 llm = ChatOllama(model=OLLAMA_MODEL, temperature=0, base_url=OLLAMA_BASE_URL)
 
 ROUTER_INSTRUCTIONS = '''You are an expert at determining whether a user question requires access to a database from a smartphone shop. 
@@ -163,7 +162,7 @@ def executePostgreSQLQuery(query: str) -> List:
 
     # Connect to database
     # print("executePostgreSQLQuery tool called!")
-    conn = psycopg2.connect(database=POSTGRES_DATABASE, user=POSTGRES_USER, password=POSTGRES_PASSWORD, host="localhost", port="5432")
+    conn = psycopg2.connect(database=POSTGRES_DB, user=POSTGRES_USER, password=POSTGRES_PASSWORD, host=POSTGRES_BASE_URL, port="5432")
     # print("Database connected successfully.")
     with conn.cursor() as cursor:
         try:
@@ -366,8 +365,9 @@ async def inference(inputs: str):
 
         async for output, metadata in graph.astream(prompt, config, stream_mode="messages"):
             if metadata['langgraph_node'] == 'generate_response':
+                print(output.content, end='|', flush=True)
                 yield output.content
-    return StreamingResponse(stream_outputs(), media_type="text/markdown")
+    return StreamingResponse(stream_outputs(), media_type="text/plain")
 
 if __name__ == '__main__':
-    uvicorn.run(app=app, port=8000)
+    uvicorn.run(app=app, host="0.0.0.0", port=8000)
