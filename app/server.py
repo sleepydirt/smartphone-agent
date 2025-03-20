@@ -20,6 +20,7 @@ import psycopg2
 import os
 import json
 import re
+from pydantic import BaseModel
 
 load_dotenv()
 app = FastAPI()
@@ -42,7 +43,7 @@ OLLAMA_MODEL = "llama3.1:8b"
 POSTGRES_PASSWORD = os.getenv("POSTGRES_PASSWORD", "password")
 POSTGRES_USER = os.getenv("POSTGRES_USER", "admin")
 POSTGRES_DB = os.getenv("POSTGRES_DB", "smartphones_db")
-OLLAMA_BASE_URL = os.getenv("OLLAMA_HOST", "http://ollama:11434")
+OLLAMA_BASE_URL = os.getenv("OLLAMA_HOST", "http://localhost:11434")
 POSTGRES_BASE_URL = os.getenv("POSTGRES_HOST", "db")
 
 llm_json = ChatOllama(model=OLLAMA_MODEL, temperature=0, format="json", base_url=OLLAMA_BASE_URL)
@@ -51,7 +52,7 @@ llm = ChatOllama(model=OLLAMA_MODEL, temperature=0, base_url=OLLAMA_BASE_URL)
 ROUTER_INSTRUCTIONS = '''You are an expert at determining whether a user question requires access to a database from a smartphone shop. 
 
 The database schema is as follows:
-- id (int): The unique identifier of the smartphone. You will not use this.
+
 - brand (str): The brand of the smartphone, (eg. 'Apple', 'Google', 'Samsung'...)
 - model (str): The model of the smartphone (eg. 'iPhone 13 Pro Max', 'Galaxy S21 Ultra', 'Mi 13 Pro'...)
 - price (int): The price of the smartphone in Singapore Dollars.
@@ -68,16 +69,22 @@ Given an input question, create a syntactically correct PostgreSQL query to run.
 DO NOT make any DML statements (INSERT, UPDATE, DELETE, DROP etc.) to the database.
 
 The database schema is as follows:
-- id (int): The unique identifier of the smartphone. You will not use this.
+
 - brand (str): The brand of the smartphone, (eg. 'Apple', 'Google', 'Samsung'...)
 - model (str): The model of the smartphone (eg. 'iPhone 13 Pro Max', 'Galaxy S21 Ultra', 'Mi 13 Pro'...)
 - price (int): The price of the smartphone in Singapore Dollars.
 - stock_status (str): The stock status of the smartphone ('In Stock', 'Out of Stock')
 '''
 
-GRADER_INSTRUCTIONS = '''You are an expert grader that will be provided with data from a smartphone store's database and a user question.
-If the database contains information that can answer the user's question, grade it as 'yes'. Please also justify your choice, explaining why 
-the database information contains information related to the user's question. 
+GRADER_INSTRUCTIONS = '''You are an expert grader. Your score and justification will influence how the student responds to a user query.
+
+You will be provided with data from a smartphone store's database and a user question.
+
+If the database contains information that can answer the user's question, grade it as 'yes'. 
+
+Please also justify your choice, explaining why the database information contains information related to the user's question. 
+
+In your justification, please also advise your student on how he should respond to the user's query.
 
 Return JSON with two keys; 
 
@@ -89,11 +96,11 @@ Example:
 
 question: Can I know the price of the iPhone 13 Pro?
 data: null
-retrieved_content: ['Brand: Apple\nModel: iPhone 13\nPrice: 1099\nStock_Status: In Stock']
+retrieved_content: ['Brand: Apple\nModel: iPhone 13\nPrice: 1099\nStock_Status: In Stock', 'Brand: Apple\nModel: iPhone 14 Pro\nPrice: 1499\nStock_Status: In Stock']
 
 Response:
 {'grader_score': 'no',
- 'justify': "The results suggest that the database does not contain any information about the price of the iPhone 13 Pro. These should be suggested as alternatives."}
+ 'justify': "The results suggest that the database does not contain any information about the iPhone 13 Pro. You should inform the user that this exact model is unavailable, but suggest these as alternatives."}
 '''
 
 GRADER_PROMPT = '''Here is the data provided: \n\n {data} Here is some additional information (if available): \n\n {retrieved_content} \n\n Here is the user's question: \n\n {question}'''
@@ -116,9 +123,11 @@ Here is what a grader has to say about the data to help you with your response:
 
 {feedback}
 
-Please structure your response this format if there is context provided:
+Please structure your response a list-like format if there is context provided:
 
-<Brand> <Model>\n S$<Price>\n (<Stock Status>)\n\n
+- **<Brand> <Model>**: S$<Price> (<Stock Status>)
+
+Please use a friendly and approachable tone in your response! Be creative with emojis and markdown.
 '''
 
 class State(TypedDict):
@@ -127,6 +136,9 @@ class State(TypedDict):
     grader_score: Literal['yes', 'no']
     justify: str
     retrieved_content: List
+
+class InferenceRequest(BaseModel):
+    inputs: str
 
 # Tools
 @tool
@@ -351,23 +363,29 @@ async def root():
     return {"message": "Hello World"}
 
 @app.post("/inference/")
-async def inference(inputs: str):
+async def inference(request: InferenceRequest):
     prompt = {
-    "messages": [HumanMessage(content=inputs)],
-    "tool_call_result": [],
-    "grader_score": "",
-    "justify": "",
-    "retrieved_content": []
+        "messages": [HumanMessage(content=request.inputs)],
+        "tool_call_result": [],
+        "grader_score": "",
+        "justify": "",
+        "retrieved_content": []
     }
     config = {"configurable": {"thread_id": str(uuid.uuid4())}}
 
     async def stream_outputs():
-
         async for output, metadata in graph.astream(prompt, config, stream_mode="messages"):
             if metadata['langgraph_node'] == 'generate_response':
-                print(output.content, end='|', flush=True)
                 yield output.content
-    return StreamingResponse(stream_outputs(), media_type="text/plain")
+                
+    return StreamingResponse(
+        stream_outputs(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+        }
+    )
 
 if __name__ == '__main__':
     uvicorn.run(app=app, host="0.0.0.0", port=8000)
