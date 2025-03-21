@@ -1,5 +1,5 @@
-CREATE DATABASE smartphones_db;
-\c smartphones_db;
+CREATE DATABASE IF NOT EXISTS smartphones_db;
+\ c smartphones_db;
 CREATE TABLE IF NOT EXISTS smartphones (
     id SERIAL PRIMARY KEY,
     brand TEXT,
